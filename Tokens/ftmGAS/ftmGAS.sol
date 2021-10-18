@@ -86,12 +86,12 @@ contract ftmGAS is ERC20, Ownable {
     	address indexed processor
     );
 
-    constructor() public ERC20("ftmGAS", "ftmGAS") {
+    constructor() public ERC20("ftmGAStest", "ftmGAStest") {
 
     	dividendTracker = new ftmGASDividendTracker();
 
 
-    	IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0xF491e7B69E4244ad4002BC14e878a34207E38c29);
+    	IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff);
          // Create a uniswap pair for this new token
         address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
