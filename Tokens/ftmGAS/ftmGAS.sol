@@ -145,9 +145,31 @@ contract ftmGAS is ERC20, Ownable {
         require(newAddress != address(uniswapV2Router), "ftmGAS: The router already has that address");
         emit UpdateUniswapV2Router(newAddress, address(uniswapV2Router));
         uniswapV2Router = IUniswapV2Router02(newAddress);
-        address _uniswapV2Pair = IUniswapV2Factory(uniswapV2Router.factory())
-            .createPair(address(this), uniswapV2Router.WETH());
+
+        IUniswapV2Factory factory = IUniswapV2Factory(
+            uniswapV2Router.factory()
+        );
+
+        address _uniswapV2Pair = factory.getPair(
+            address(this),
+            uniswapV2Router.WETH()
+        );
+
+        if (_uniswapV2Pair == address(0)) {
+            _uniswapV2Pair = factory.createPair(
+                address(this),
+                uniswapV2Router.WETH()
+            );
+        }
+
         uniswapV2Pair = _uniswapV2Pair;
+
+        if (!automatedMarketMakerPairs[uniswapV2Pair]) {
+            _setAutomatedMarketMakerPair(uniswapV2Pair, true);
+        }
+        if (!dividendTracker.excludedFromDividends[address(uniswapV2Router)]) {
+            dividendTracker.excludeFromDividends(address(uniswapV2Router));
+        }
     }
 
     function excludeFromFees(address account, bool excluded) public onlyOwner {
@@ -187,7 +209,10 @@ contract ftmGAS is ERC20, Ownable {
 
 
     function setAutomatedMarketMakerPair(address pair, bool value) public onlyOwner {
-        require(pair != uniswapV2Pair, "ftmGAS: The PancakeSwap pair cannot be removed from automatedMarketMakerPairs");
+        require(
+            pair != uniswapV2Pair || value,
+            "ftmGAS: The current pair cannot be removed from automatedMarketMakerPairs"
+        );
 
         _setAutomatedMarketMakerPair(pair, value);
     }
