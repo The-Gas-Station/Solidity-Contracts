@@ -167,7 +167,9 @@ contract ftmGAS is ERC20, Ownable {
         if (!automatedMarketMakerPairs[uniswapV2Pair]) {
             _setAutomatedMarketMakerPair(uniswapV2Pair, true);
         }
-        dividendTracker.excludeFromDividends(address(uniswapV2Router));
+        if (!dividendTracker.excludedFromDividends[address(uniswapV2Router)]) {
+            dividendTracker.excludeFromDividends(address(uniswapV2Router));
+        }
     }
 
     function excludeFromFees(address account, bool excluded) public onlyOwner {
