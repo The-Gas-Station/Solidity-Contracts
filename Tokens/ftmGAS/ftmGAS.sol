@@ -47,6 +47,8 @@ contract ftmGAS is ERC20, Ownable {
 
      // exlcude from fees and max transaction amount
     mapping (address => bool) private _isExcludedFromFees;
+     // exlcude from fees and max transaction amount during trades
+    mapping (address => bool) private _isExcludedFromFeesDuringTrades;
 
 
     // store addresses that a autoFANTOM market maker pairs. Any transfer *to* these addresses
@@ -57,8 +59,8 @@ contract ftmGAS is ERC20, Ownable {
 
     event UpdateUniswapV2Router(address indexed newAddress, address indexed oldAddress);
 
-    event ExcludeFromFees(address indexed account, bool isExcluded);
-    event ExcludeMultipleAccountsFromFees(address[] accounts, bool isExcluded);
+    event ExcludeFromFees(address indexed account, bool isExcluded, bool isExcludedDuringTrades);
+    event ExcludeMultipleAccountsFromFees(address[] accounts, bool isExcluded, bool isExcludedDuringTrades);
 
     event SetAutomatedMarketMakerPair(address indexed pair, bool indexed value);
 
@@ -109,9 +111,9 @@ contract ftmGAS is ERC20, Ownable {
         dividendTracker.excludeFromDividends(address(_uniswapV2Router));
 
         // exclude from paying fees or having max transaction amount
-        excludeFromFees(owner(), true);
-        excludeFromFees(_marketingWalletAddress, true);
-        excludeFromFees(address(this), true);
+        excludeFromFees(owner(), true, true);
+        excludeFromFees(_marketingWalletAddress, true, true);
+        excludeFromFees(address(this), true, true);
 
         /*
             _mint is an internal function in ERC20.sol that is only called here,
@@ -172,19 +174,21 @@ contract ftmGAS is ERC20, Ownable {
         }
     }
 
-    function excludeFromFees(address account, bool excluded) public onlyOwner {
-        require(_isExcludedFromFees[account] != excluded, "ftmGAS: Account is already the value of 'excluded'");
+    function excludeFromFees(address account, bool excluded, bool excludedFromTrades) public onlyOwner {
+        require(_isExcludedFromFees[account] != excluded || _isExcludedFromFeesDuringTrades[account] != excludedFromTrades, "ftmGAS: Account is already the value of 'excluded' and 'excludedFromTrades'");
         _isExcludedFromFees[account] = excluded;
+        _isExcludedFromFeesDuringTrades[account] = excludedFromTrades;
 
-        emit ExcludeFromFees(account, excluded);
+        emit ExcludeFromFees(account, excluded, excludedFromTrades);
     }
 
-    function excludeMultipleAccountsFromFees(address[] calldata accounts, bool excluded) public onlyOwner {
+    function excludeMultipleAccountsFromFees(address[] calldata accounts, bool excluded, bool excludedFromTrades) public onlyOwner {
         for(uint256 i = 0; i < accounts.length; i++) {
             _isExcludedFromFees[accounts[i]] = excluded;
+            _isExcludedFromFeesDuringTrades[accounts[i]] = excludedFromTrades;
         }
 
-        emit ExcludeMultipleAccountsFromFees(accounts, excluded);
+        emit ExcludeMultipleAccountsFromFees(accounts, excluded, excludedFromTrades);
     }
 
     function setMarketingWallet(address payable wallet) external onlyOwner{
@@ -255,6 +259,10 @@ contract ftmGAS is ERC20, Ownable {
 
     function isExcludedFromFees(address account) public view returns(bool) {
         return _isExcludedFromFees[account];
+    }
+
+    function isExcludedFromFeesDuringTrades(address account) public view returns(bool) {
+        return _isExcludedFromFeesDuringTrades[account];
     }
 
     function withdrawableDividendOf(address account) public view returns(uint256) {
@@ -356,7 +364,9 @@ contract ftmGAS is ERC20, Ownable {
 
         // if any account belongs to _isExcludedFromFee account then remove the fee
         if(_isExcludedFromFees[from] || _isExcludedFromFees[to]) {
-            takeFee = false;
+            if (_isExcludedFromFeesDuringTrades[from] || _isExcludedFromFeesDuringTrades[to] || (!automatedMarketMakerPairs[to] && !automatedMarketMakerPairs[from])) {
+                takeFee = false;
+            }
         }
 
         if(takeFee) {
