@@ -747,7 +747,7 @@ contract StakingPoolDualReward is Ownable, Initializable {
     /// @param  _endBlock The block when rewards will end
     function setEndBlock(uint256 _endBlock) external onlyOwner {
         require(
-            endBlock > endBlock,
+            _endBlock > endBlock,
             'new bonus end block must be greater than current'
         );
         endBlock = _endBlock;
