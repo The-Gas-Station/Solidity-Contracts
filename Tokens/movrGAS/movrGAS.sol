@@ -93,7 +93,7 @@ contract movrGAS is ERC20, Ownable {
     	dividendTracker = new movrGASDividendTracker();
 
 
-    	IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);
+    	IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0xAA30eF758139ae4a7f798112902Bf6d65612045f);
          // Create a uniswap pair for this new token
         address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
