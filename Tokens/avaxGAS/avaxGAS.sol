@@ -70,7 +70,7 @@ contract avaxGAS is ERC20, Ownable {
 
     event SwapAndLiquify(
         uint256 tokensSwapped,
-        uint256 ethReceived,
+        uint256 avaxReceived,
         uint256 tokensIntoLiqudity
     );
 
@@ -96,7 +96,7 @@ contract avaxGAS is ERC20, Ownable {
     	IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);
          // Create a uniswap pair for this new token
         address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-            .createPair(address(this), _uniswapV2Router.WETH());
+            .createPair(address(this), _uniswapV2Router.WAVAX());
 
         uniswapV2Router = _uniswapV2Router;
         uniswapV2Pair = _uniswapV2Pair;
@@ -154,13 +154,13 @@ contract avaxGAS is ERC20, Ownable {
 
         address _uniswapV2Pair = factory.getPair(
             address(this),
-            uniswapV2Router.WETH()
+            uniswapV2Router.WAVAX()
         );
 
         if (_uniswapV2Pair == address(0)) {
             _uniswapV2Pair = factory.createPair(
                 address(this),
-                uniswapV2Router.WETH()
+                uniswapV2Router.WAVAX()
             );
         }
 
@@ -400,7 +400,7 @@ contract avaxGAS is ERC20, Ownable {
 
         uint256 initialBalance = address(this).balance;
 
-        swapTokensForEth(tokens);
+        swapTokensForAvax(tokens);
         uint256 newBalance = address(this).balance.sub(initialBalance);
         payable(_marketingWalletAddress).transfer(newBalance);
     }
@@ -410,16 +410,16 @@ contract avaxGAS is ERC20, Ownable {
         uint256 half = tokens.div(2);
         uint256 otherHalf = tokens.sub(half);
 
-        // capture the contract's current ETH balance.
-        // this is so that we can capture exactly the amount of ETH that the
-        // swap creates, and not make the liquidity event include any ETH that
+        // capture the contract's current AVAX balance.
+        // this is so that we can capture exactly the amount of AVAX that the
+        // swap creates, and not make the liquidity event include any AVAX that
         // has been manually sent to the contract
         uint256 initialBalance = address(this).balance;
 
-        // swap tokens for ETH
-        swapTokensForEth(half); // <- this breaks the ETH -> HATE swap when swap+liquify is triggered
+        // swap tokens for AVAX
+        swapTokensForAvax(half); // <- this breaks the AVAX -> HATE swap when swap+liquify is triggered
 
-        // how much ETH did we just swap into?
+        // how much AVAX did we just swap into?
         uint256 newBalance = address(this).balance.sub(initialBalance);
 
         // add liquidity to uniswap
@@ -429,20 +429,20 @@ contract avaxGAS is ERC20, Ownable {
     }
 
 
-    function swapTokensForEth(uint256 tokenAmount) private {
+    function swapTokensForAvax(uint256 tokenAmount) private {
 
 
-        // generate the uniswap pair path of token -> weth
+        // generate the uniswap pair path of token -> WAVAX
         address[] memory path = new address[](2);
         path[0] = address(this);
-        path[1] = uniswapV2Router.WETH();
+        path[1] = uniswapV2Router.WAVAX();
 
         _approve(address(this), address(uniswapV2Router), tokenAmount);
 
         // make the swap
-        uniswapV2Router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uniswapV2Router.swapExactTokensForAVAXSupportingFeeOnTransferTokens(
             tokenAmount,
-            0, // accept any amount of ETH
+            0, // accept any amount of AVAX
             path,
             address(this),
             block.timestamp
@@ -450,13 +450,13 @@ contract avaxGAS is ERC20, Ownable {
 
     }
 
-    function addLiquidity(uint256 tokenAmount, uint256 ethAmount) private {
+    function addLiquidity(uint256 tokenAmount, uint256 avaxAmount) private {
 
         // approve token transfer to cover all possible scenarios
         _approve(address(this), address(uniswapV2Router), tokenAmount);
 
         // add the liquidity
-        uniswapV2Router.addLiquidityETH{value: ethAmount}(
+        uniswapV2Router.addLiquidityAVAX{value: avaxAmount}(
             address(this),
             tokenAmount,
             0, // slippage is unavoidable
@@ -468,7 +468,7 @@ contract avaxGAS is ERC20, Ownable {
     }
 
     function swapAndSendDividends(uint256 tokens) private{
-       swapTokensForEth(tokens);
+       swapTokensForAvax(tokens);
         uint256 dividends = address(this).balance;
         (bool success,) = address(dividendTracker).call{value: dividends}("");
 
